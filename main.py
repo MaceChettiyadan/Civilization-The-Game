@@ -9,16 +9,19 @@ import gamestates.menu
 def main(gamestate: str):
     #create a pygame instance and a variable for it
     game = pygame.init()
-    pygame.display.set_caption('Game')
+    pygame.display.set_caption('Pseudocode: The Game')
     screen = pygame.display.set_mode(pygame.display.list_modes()[0])
 
+    def check_gamestate(gamestate: str):
+        match gamestate:
+            case 'menu':
+                gamestate = gamestates.menu.main(game, screen)
+                check_gamestate(gamestate)
+            case 'game':
+                gamestate = gamestates.game.main(game, screen)
+                check_gamestate(gamestate)
 
-    #switch statement for gamestate
-    match gamestate:
-        case 'menu':
-            gamestates.menu.main(game, screen)
-        case 'game':
-            gamestates.game.main(game, screen)
+    check_gamestate(gamestate)
 
 
 if __name__ == '__main__':

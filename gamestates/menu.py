@@ -30,7 +30,7 @@ def main(game, screen):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     if play_button.get_rect(topleft=(screen.get_width() / 2 - play_button.get_width() / 2, screen.get_height() / 2 - play_button.get_height() / 2)).collidepoint(event.pos):
-                        return 'game'
+                        return 'choosechar'
                     
             #CHECK FOR MOUSE OVER THE PLAY BUTTON
             if event.type == pygame.MOUSEMOTION:

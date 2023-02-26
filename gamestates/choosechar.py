@@ -5,10 +5,7 @@ def main(game, screen):
     chars: str = ['bongleshnout', 'foundlemoup', 'dingledoo', 'maxted']
     render_chars = []
 
-    char1: str = ''
-    char2: str = ''
-
-    current_player: int = 1
+    char_selected: str = ''
 
     for char in chars:
         char = pygame.image.load('assets/' + char + '.png').convert()
@@ -23,18 +20,22 @@ def main(game, screen):
             if i == iOutline:
                 screen.blit(outline, (-130 + render_chars[i].get_width() / 2 + (i * 300), screen.get_height() / 2 - render_chars[i].get_height() / 2 + 100))
             screen.blit(render_chars[i], (-130 + render_chars[i].get_width() / 2 + (i * 300), screen.get_height() / 2 - render_chars[i].get_height() / 2 + 100))
+            #draw name center top of char
+            font = pygame.font.SysFont('Comic Sans MS', 30)
+            text = font.render(chars[i], True, (255, 255, 255))
+            screen.blit(text, (-130 + render_chars[i].get_width() / 2 + (i * 300) + ((render_chars[i].get_width() - text.get_width()) / 2), screen.get_height() / 2 - render_chars[i].get_height() / 2 + 100 - text.get_height()))
 
 
-    def clear_draw(player: int, iOutline: int = -1):
+    def clear_draw(iOutline: int = -1):
         #clear the screen
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont('Comic Sans MS', 50)
-        text = font.render('Player ' + str(player) + ': Choose your Character!', True, (255, 255, 255))
+        text = font.render('Choose your Character!', True, (255, 255, 255))
         #blit the text on the center of the screen
         screen.blit(text, (screen.get_width() / 2 - text.get_width() / 2, screen.get_height() / 2 - text.get_height() / 2 - 300))
         draw_chars(iOutline)
 
-    clear_draw(current_player)
+    clear_draw()
 
     while True:
         for event in pygame.event.get():
@@ -46,18 +47,13 @@ def main(game, screen):
                 if event.button == 1:
                     for i in range(len(render_chars)):
                         if render_chars[i].get_rect(topleft=(-130 + render_chars[i].get_width() / 2 + (i * 300), screen.get_height() / 2 - render_chars[i].get_height() / 2 + 100)).collidepoint(event.pos):
-                            if current_player == 1:
-                                char1 = chars[i]
-                                current_player = 2
-                                clear_draw(current_player, i)
-                            else:
-                                char2 = chars[i]
-                                return 'game', char1, char2
+                            char_selected = chars[i]
+                            return 'versus', char_selected
                             
             if event.type == pygame.MOUSEMOTION:
                 for i in range(len(render_chars)):
                     if render_chars[i].get_rect(topleft=(-130 + render_chars[i].get_width() / 2 + (i * 300), screen.get_height() / 2 - render_chars[i].get_height() / 2 + 100)).collidepoint(event.pos):
-                        clear_draw(current_player, i)
+                        clear_draw(i)
                     else:
                         continue
 

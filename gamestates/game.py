@@ -1,3 +1,4 @@
+import math
 import textwrap
 import pygame
 import sys
@@ -19,8 +20,12 @@ class Card:
         if not self.one_time: 
             self.in_play = True
             self.loops_left -= 1
-            if self.loops_left == 0: del self
-        else: del self
+            if self.loops_left == 0: 
+                player.hand.remove(self)
+                del self
+        else: 
+            player.hand.remove(self)
+            del self
 
     def render(self, screen, x, y):
         screen.blit(card_template, (x, y))
@@ -111,7 +116,7 @@ def main(game, screen, char: str, ai_name: str):
         [Card('Attack',
                 'attack',
                 'Deal 5 damage to the enemy',
-                lambda args: player.damage(args[0]),
+                lambda args: ai.damage(args[0]),
                 [5]
                 ), 'attack'],
         [Card('Heal',
@@ -165,6 +170,13 @@ def main(game, screen, char: str, ai_name: str):
     diff: int = 30
 
     top_card: int = None
+    player_turn: bool = True
+
+    card_selection = [0, 0]
+    card_offset = [0, 0]
+    drag_card: Card = None
+    drag_index: int = None
+    dragging: bool = False
 
     while True:
         if diff > 0: diff -= 1
@@ -187,12 +199,15 @@ def main(game, screen, char: str, ai_name: str):
 
         for i in range(len(player.hand)):
             card = player.hand[i][0]
-            if i != top_card:
+            if i != top_card and i != drag_index:
                 card.render(screen, i * 100 + 10 - diff * i * i, screen.get_height() - 300)
 
-        if top_card != None:
-            card = player.hand[top_card][0]
-            card.render(screen, top_card * 100 + 10 - diff * i * i, screen.get_height() - 350)
+            if top_card != None and drag_index != top_card:
+                card = player.hand[top_card][0]
+                card.render(screen, top_card * 100 + 10 - diff * i * i, screen.get_height() - 350)
+                
+            if dragging:
+                drag_card.render(screen, card_selection[0] + card_offset[0], card_selection[1] + card_offset[1])
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -200,16 +215,57 @@ def main(game, screen, char: str, ai_name: str):
                 sys.exit()
 
             if event.type == pygame.MOUSEMOTION:
+                if dragging:
+                    card_selection[0] = event.pos[0]
+                    card_selection[1] = event.pos[1]
                 #CHECK IF MOUSE IS OVER CARD
                 for i in range(len(player.hand)):
                     card = player.hand[i][0]
                     if event.pos[0] > i * 100 + 10 and event.pos[0] < i * 100 + 10 + card_template.get_width():
-                        if event.pos[1] > screen.get_height() - 300 and event.pos[1] < screen.get_height() - 300 + card_template.get_height():
+                        if event.pos[1] > screen.get_height() - 300 and event.pos[1] < screen.get_height() - 300 + card_template.get_height() and not dragging:
                             top_card = i
                             break
                         else:
                             top_card = None
                     else:
                         top_card = None
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if not player_turn:
+                    dragging = False
+                    continue
+                if event.button == 1:
+                    if top_card != None:
+                        dragging = True
+                        card_selection[0] = event.pos[0]
+                        card_selection[1] = event.pos[1]
+
+                        card_offset = [
+                            top_card * 100 + 10 - diff * top_card * top_card - card_selection[0],
+                            screen.get_height() - 350 - card_selection[1]
+                        ]
+
+                        drag_card = player.hand[top_card][0]
+                        drag_index = top_card
+
+
+            if event.type == pygame.MOUSEBUTTONUP:
+
+                play_slot_pos = [
+                    screen.get_width() - play_slot.get_width() - 225,
+                    screen.get_height() - 300
+                ]
+                dist = math.sqrt((card_selection[0] - play_slot_pos[0]) ** 2 + (card_selection[1] - play_slot_pos[1]) ** 2)
+                print(dist)
+                if dist < 100:
+                    drag_card.play()
+                    player_turn = False
+
+                dragging = False
+                drag_card = None
+                drag_index = None
+
+
+
         pygame.display.update()
     return 'menu'

@@ -2,18 +2,16 @@ import pygame
 import sys
 import gamestates.game
 import gamestates.menu
-import gamestates.choosechar
-import gamestates.versus
+import gamestates.initialise_empire
 
 #create a pygame window
 
 def main(gamestate: str):
     #create a pygame instance and a variable for it
     game = pygame.init()
-    pygame.display.set_caption('Pseudocode: The Game')
+    pygame.display.set_caption('Civilization: The Game')
     #1200 x 800
     screen = pygame.display.set_mode((1200, 800))
-    char: str = ''
 
     def slideInOut():
         x = 0
@@ -36,29 +34,25 @@ def main(gamestate: str):
                     sys.exit()
             pygame.display.update()
 
-    ai = ''
 
-    def check_gamestate(gamestate: str, char: str, ai: str):
+    def check_gamestate(gamestate: str):
+        pygame.mouse.set_cursor(*pygame.cursors.arrow)
         match gamestate:
             case 'menu':
                 slideInOut()
                 gamestate = gamestates.menu.main(game, screen)
-                check_gamestate(gamestate, char, ai)
+                check_gamestate(gamestate)
             case 'game':
                 slideInOut()
-                gamestate = gamestates.game.main(game, screen, char, ai)
-                check_gamestate(gamestate, char, ai)
-            case 'choosechar':
-                slideInOut()
-                [gamestate, char] = gamestates.choosechar.main(game, screen)
-                check_gamestate(gamestate, char, ai)
-            case 'versus':
-                slideInOut()
-                [gamestate, ai] = gamestates.versus.main(game, screen, char)
-                check_gamestate(gamestate, char, ai)
+                gamestate = gamestates.game.main(game, screen)
+                check_gamestate(gamestate)
 
+            case 'initialise_empire':
+                slideInOut()
+                gamestate = gamestates.initialise_empire.main(game, screen)
+                check_gamestate(gamestate)
 
-    check_gamestate(gamestate, char, ai)
+    check_gamestate(gamestate)
 
 
 

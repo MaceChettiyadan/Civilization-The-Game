@@ -13,6 +13,9 @@ def main(gamestate: str):
     #1200 x 800
     screen = pygame.display.set_mode((1200, 800))
 
+    empire_name: str = ""
+    empire_location: str = ""
+
     def slideInOut():
         x = 0
         while True:
@@ -35,24 +38,24 @@ def main(gamestate: str):
             pygame.display.update()
 
 
-    def check_gamestate(gamestate: str):
+    def check_gamestate(gamestate: str, empire_name: str, empire_location: str):
         pygame.mouse.set_cursor(*pygame.cursors.arrow)
         match gamestate:
             case 'menu':
                 slideInOut()
                 gamestate = gamestates.menu.main(game, screen)
-                check_gamestate(gamestate)
+                check_gamestate(gamestate, empire_name, empire_location)
             case 'game':
                 slideInOut()
                 gamestate = gamestates.game.main(game, screen)
-                check_gamestate(gamestate)
+                check_gamestate(gamestate, empire_name, empire_location)
 
             case 'initialise_empire':
                 slideInOut()
-                gamestate = gamestates.initialise_empire.main(game, screen)
-                check_gamestate(gamestate)
+                gamestate, empire_name, empire_location = gamestates.initialise_empire.main(game, screen)
+                check_gamestate(gamestate, empire_name, empire_location)
 
-    check_gamestate(gamestate)
+    check_gamestate(gamestate, empire_name, empire_location)
 
 
 

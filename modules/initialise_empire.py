@@ -25,15 +25,15 @@ def main(game, screen):
         font = pygame.font.SysFont('Monospace', 25)
         text = font.render('Begin', True, (0, 0, 0))
         screen.blit(text, (705, 560))
-        text = font.render('Choose your location:', True, (0, 0, 0))
+        text = font.render('Starting Location:', True, (0, 0, 0))
         screen.blit(text, (350, 350))
-        dropdown(675, 337, empire_location)
+        dropdown(650, 337, empire_location)
 
     def dropdown(x: int, y: int, current_option: str):
         #draw rect at x, y
-        pygame.draw.rect(screen, (255, 255, 255), (x, y, 200, 50))
+        pygame.draw.rect(screen, (255, 255, 255) if not focused_on_dropdown else (211,211,211), (x, y, 200, 50))
         # add up and down arrows on the right
-        pygame.draw.polygon(screen, (0, 0, 0), ((x + 185, y), (x + 175, y + 15), (x + 195, y + 15)))
+        pygame.draw.polygon(screen, (0, 0, 0), ((x + 185, y+1), (x + 175, y + 15), (x + 195, y + 15)))
         pygame.draw.polygon(screen, (0, 0, 0), ((x + 185, y + 45), (x + 175, y + 30), (x + 195, y + 30)))
         # draw text for current option
         font = pygame.font.SysFont('Monospace', 25)
@@ -46,6 +46,7 @@ def main(game, screen):
 
     begin_hover = False
     focused_on_name_input = False
+    focused_on_dropdown = False
 
     while True:
         screen.fill((135, 206, 235))
@@ -58,7 +59,7 @@ def main(game, screen):
             if event.type == pygame.KEYDOWN and focused_on_name_input:
                 if event.key == pygame.K_BACKSPACE and len(empire_name) > 0:
                     empire_name = empire_name[:-1]
-                elif len(empire_name) < 20:
+                elif len(empire_name) < 26:
                     empire_name += event.unicode
 
             if event.type == pygame.MOUSEMOTION:
@@ -76,11 +77,16 @@ def main(game, screen):
                 else:
                     focused_on_name_input = False
 
-                if 850 < event.pos[0] < 880 and 310 < event.pos[1] < 355:
+                if 825 < event.pos[0] < 855 and 310 < event.pos[1] < 355:
+                    focused_on_dropdown = True
                     empire_location = locations[locations.index(empire_location) - 1 if locations.index(empire_location) - 1 > -1 else -1]
-                
-                if 850 < event.pos[0] < 880 and 360 < event.pos[1] < 400:
+                elif 825 < event.pos[0] < 855 and 360 < event.pos[1] < 400:
+                    focused_on_dropdown = True
                     empire_location = locations[locations.index(empire_location) + 1 if locations.index(empire_location) + 1 < len(locations) else 0]
+                elif 650 < event.pos[0] < 850 and 337 < event.pos[1] < 387:
+                    focused_on_dropdown =True
+                else:
+                    focused_on_dropdown = False
 
                 if begin_hover and len(empire_name) > 0:
                     return 'game', empire_name, empire_location

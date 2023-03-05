@@ -1,8 +1,8 @@
 import pygame
 import sys
-import gamestates.game
-import gamestates.menu
-import gamestates.initialise_empire
+import modules.game
+import modules.menu
+import modules.initialise_empire
 
 #create a pygame window
 
@@ -43,16 +43,16 @@ def main(gamestate: str):
         match gamestate:
             case 'menu':
                 slideInOut()
-                gamestate = gamestates.menu.main(game, screen)
+                gamestate = modules.menu.main(game, screen)
                 check_gamestate(gamestate, empire_name, empire_location)
             case 'game':
                 slideInOut()
-                gamestate = gamestates.game.main(game, screen)
+                gamestate = modules.game.main(game, screen, empire_name, empire_location)
                 check_gamestate(gamestate, empire_name, empire_location)
 
             case 'initialise_empire':
                 slideInOut()
-                gamestate, empire_name, empire_location = gamestates.initialise_empire.main(game, screen)
+                gamestate, empire_name, empire_location = modules.initialise_empire.main(game, screen)
                 check_gamestate(gamestate, empire_name, empire_location)
 
     check_gamestate(gamestate, empire_name, empire_location)

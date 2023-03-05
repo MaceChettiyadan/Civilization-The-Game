@@ -71,8 +71,8 @@ def draw_regular_polygon(surface, color, vertex_count, radius, position, width=0
 
 def determine_coordinates(grid_position: tuple, radius: int):
     x, y = grid_position
-    screen_x = 600 + radius * 3/2 * x
-    screen_y = 400 + radius * (3**0.5) * (y + x/2)
+    screen_x = 2500 + radius * 3/2 * x
+    screen_y = 2500 + radius * (3**0.5) * (y + x/2)
     return (screen_x, screen_y)
 
 
@@ -225,7 +225,7 @@ def main(game, screen, name, starting_tile):
     global tile_surface
     tile_surface = pygame.Surface((5000, 5000))
 
-    tile_rect = pygame.rect(0, 0, 5000, 5000)
+    tile_rect = pygame.rect.Rect(0, 0, 5000, 5000)
     
     global zoom
     zoom = 4
@@ -248,8 +248,6 @@ def main(game, screen, name, starting_tile):
 
     selected: Tile = None
     select_pos: tuple = (0, 0)
-    offset: tuple = (0, 0)
-    last_pos: tuple = (0, 0)
     dragging: bool = False
 
     tiles: list = [
@@ -299,10 +297,10 @@ def main(game, screen, name, starting_tile):
 
 
         if not selected:
-            window.blit(tile_surface, offset)
+            window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
         else:
             selected.render(True)
-            window.blit(tile_surface, offset)
+            window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
             draw_tooltip((selected, select_pos))
 
         draw_crucial_stats(name)
@@ -314,7 +312,8 @@ def main(game, screen, name, starting_tile):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 #check if we clicked on a tile
                 for tile in tiles:
-                    if tile.is_pos_in_tile(pygame.mouse.get_pos()):
+                    pos_offset_adjusted = (pygame.mouse.get_pos()[0] - tile_rect.x + 2500, pygame.mouse.get_pos()[1] - tile_rect.y + 2500)
+                    if tile.is_pos_in_tile(pos_offset_adjusted):
                         selected = tile
                         select_pos = pygame.mouse.get_pos()
                         break
@@ -325,14 +324,15 @@ def main(game, screen, name, starting_tile):
                 if not selected:
                 #allow for click and drag
                     dragging = True
+                    mouse_x, mouse_y = event.pos
+                    offset_x = tile_rect.x - mouse_x
+                    offset_y = tile_rect.y - mouse_y
 
             if event.type == pygame.MOUSEMOTION:
-                if last_pos == (0, 0):
-                    last_pos = event.pos
                 if dragging:
-                    offset = (floor((event.pos[0] - last_pos[0])), floor((event.pos[1] - last_pos[1])))
-                    last_pos = event.pos
-                print(offset)
+                    mouse_x, mouse_y = event.pos
+                    tile_rect.x = mouse_x + offset_x
+                    tile_rect.y = mouse_y + offset_y
 
             if event.type == pygame.MOUSEBUTTONUP:
                 dragging = False

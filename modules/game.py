@@ -9,9 +9,12 @@ def random_name_generator(type: str):
             #random name generator for places, using a list of prefixes and suffixes
             prefixes = ['New', 'Old', 'Great', 'Little', 'Big', 'Small', 'Upper', 'Lower', 'Middle', 'North', 'South', 'East', 'West', 'Fort', 'Fortress', 'Castle', 'City', 'Town', 'Village', 'Hamlet', 'Farm', 'Fern', 'Oak', 'Maple', 'Birch', 'Pine', 'Willow', 'Elm', 'Cedar', 'Hickory', 'Ash', 'Spruce', 'Beech', 'Holly', 'O']
             suffixes = ['town', 'ville', 'burg', 'ham', 'shire', 'land', 'ford', 'borough', 'burgh', 'port', 'mouth', 'haven', 'wick', 'ton', 'field', 'wood', 'bury', 'chester', 'fix', 'ton']
-            optional_second_suffixes = ['Hills', 'Central', 'Lands', 'Downs']
+            optional_second_suffixes = ['Hills', 'Central', 'Lands', 'Downs', 'Valley', 'Shire', 'Township', 'Village', 'Haven', 'Port', 'Deltas']
+            optional_second_prefixes = ['Saint', 'The', 'Holy', 'Esteemed']
             if random.randint(0, 1) == 1:
                 return random.choice(prefixes) + random.choice(suffixes) + ' ' + random.choice(optional_second_suffixes)
+            elif random.randint(0, 2) == 0:
+                return random.choice(optional_second_prefixes) + ' ' + random.choice(prefixes) + random.choice(suffixes)
             return random.choice(prefixes) + random.choice(suffixes)
 
         case 'Tribe':
@@ -158,7 +161,7 @@ def draw_tooltip(tooltip, selected_buy_sell: bool = False):
     #outline
     pygame.draw.rect(window, ((255, 255, 255) if not selected_buy_sell else (250,128,114)), (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10, 180, 50), 2)
     font = pygame.font.SysFont('Monospace', 20, bold=True)
-    text = font.render(('Buy' if tooltip[0].is_locked else 'Sell'), True, (255, 255, 255))
+    text = font.render(('[ENTER] Buy' if tooltip[0].is_locked else '[ENTER] Sell'), True, (255, 255, 255))
     window.blit(text, (tooltip[1][0] + 100 - text.get_width() / 2, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10 + 25 - text.get_height() / 2))
     # and now an outline for the whole thing
     pygame.draw.rect(window, (255, 255, 255), (tooltip[1][0], tooltip[1][1], 200, 10 + 20 * 2 + 10 + 20 * 5 + 10 + 20 + 10 + 50), 2)
@@ -215,6 +218,79 @@ def draw_crucial_stats(name: str):
     window.blit(text, (1200 - 10 - 150 - 10 - 150 - 10 - 150 + 50 - 10 - 150 - 10 - 150 - 100, 750 + 25 - text.get_height() / 2))
     text = font.render(str(food), True, (255, 255, 255))
     window.blit(text, (1200 - 130 - 10 - 150 - 10 - 150 + 50 - 10 - 150 - 10 - 150 - 100, 750 + 25 - text.get_height() / 2))
+
+
+def draw_notification(title: str, type: str, desc: str):
+    #draw a rect in middle of screen
+    pygame.draw.rect(window, (0, 0, 0), (600 - 300, 400 - 150, 600, 300))
+    pygame.draw.rect(window, (255, 255, 255), (600 - 300, 400 - 150, 600, 300), 2)
+    #draw in top center
+    #draw a seperator, not full width
+    pygame.draw.line(window, (255, 255, 255), (600 - 300 + 10, 400 - 150 + 10 + 25 + 10), (600 + 300 - 10, 400 - 150 + 10 + 25 + 10), 2)
+    font = pygame.font.SysFont('Monospace', 20)
+    length = 45
+    #split the description into 20 character lines, making sure to not split words
+    desc = desc.split(' ')
+    desc2 = []
+    for word in desc:
+        if len(word) > length:
+            desc2.append(word[:length])
+            desc2.append(word[length:])
+        else:
+            desc2.append(word)
+    desc = desc2
+    desc2 = []
+    line = ''
+    for word in desc:
+        if len(line) + len(word) > length:
+            desc2.append(line)
+            line = word
+        else:
+            line += ' ' + word
+    desc2.append(line)
+    desc = desc2
+    #draw the description
+    for i in range(len(desc)):
+        text = font.render(desc[i], True, (255, 255, 255))
+        window.blit(text, (600 - 300 + 10, 400 - 150 + 10 + 25 + 10 + 10 + 20 * i))
+
+    match type:
+        case 'Natural Disaster':
+            options = ['[P] Pay for Damages']
+            #draw seperator, 3/5 width
+            pygame.draw.line(window, (255, 255, 255), (600 - 300 + 10, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), (600 - 300 + 10 + 600 * 3 / 5, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), 2)
+            font = pygame.font.SysFont('Monospace', 25, bold=True)
+            text = font.render(title, True, (255, 255, 255))
+            window.blit(text, (600 - text.get_width() / 2, 400 - 150 + 10))
+        case 'Invasion':
+            font = pygame.font.SysFont('Monospace', 25, bold=True)
+            text = font.render('The ' + title + ' are attacking!', True, (255, 255, 255))
+            window.blit(text, (600 - text.get_width() / 2, 400 - 150 + 10))
+            options = ['[B] Bribe', '[F] Fight', '[C] Cede-Land']
+            pygame.draw.line(window, (255, 255, 255), (600 - 300 + 10, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), (600, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), 2)
+            rand = random.randint(1, 10)
+            path = 'assets/tribes/' + str(rand) + '.png'
+            image = pygame.image.load(path)
+            image = pygame.transform.scale(image, (150, 100))
+            window.blit(image, (600 - 300 + 400, 400 - 150 + 10 + 25 + 20 * len(desc) + 10 + 30 + 10))
+            #draw tribe name above image
+            font = pygame.font.SysFont('Monospace', 20, bold=True)
+            text = font.render(title, True, (255, 255, 255))
+            window.blit(text, (600 - 300 + 400 + 75 - text.get_width() / 2, 400 - 150 + 25 + 20 * len(desc) + 10 + 30 + 10 - 20))
+
+    #draw the options
+    for i in range(len(options)):
+        key = options[i].split(' ')[0]
+        value = options[i].split(' ')[1]
+        font = pygame.font.SysFont('Monospace', 23, bold=True)
+        text = font.render(key, True, (255, 255, 255))
+        window.blit(text, (600 - 300 + 15, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 30 + 30 * i))
+        font = pygame.font.SysFont('Monospace', 23)
+        text = font.render(value, True, (255, 255, 255))
+        window.blit(text, (600 - 300 + 15 + 40, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 30 + 30 * i))
+
+    
+
 
 
 
@@ -304,6 +380,7 @@ def main(game, screen, name, starting_tile):
             draw_tooltip((selected, select_pos))
 
         draw_crucial_stats(name)
+        draw_notification(random_name_generator('Tribe'), 'Invasion', 'The Orvillians, a prestigous tribe from the northwest lands, have raided. They are a proud peoples, and loyalty is welded into their souls. As for their strength in battle - lets just say - its subpar.')
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

@@ -337,13 +337,16 @@ def main(game, screen, name, starting_tile):
         Tile(random_name_generator('Place'), 'Forests', 300, 350, 250, 2600, (1, -1), 'Northern Forests', upkeep=22),
         Tile(random_name_generator('Place'), 'Plains', 50, 600, 350, 3200, (-1, 1), 'The Bushy Region', upkeep=16),
         Tile(random_name_generator('Place'), 'Mountains', 700, 200, 100, 5500, (2, 0), 'Southern Slopes', upkeep=19),
-        Tile(random_name_generator('Place'), 'Forests', 330, 330, 340, 3200, (1, -2), 'The Bushy Region', upkeep=21)
+        Tile(random_name_generator('Place'), 'Forests', 330, 330, 340, 3200, (1, -2), 'The Bushy Region', upkeep=21),
+        Tile(random_name_generator('Place'), 'Plains', 50, 450, 500, 1000, (0, -1), 'Inner Valleys', upkeep=15),
+        Tile(random_name_generator('Place'), 'Forests', 300, 400, 300, 1500, (-1, 0), 'Northern Forests', upkeep=18),
     ]
     clock = pygame.time.Clock()
     while True:
+        if zoom < 0.1:
+            zoom = 0.1
         delta_time = clock.tick(60) / 1000
         screen.fill((0, 0, 0))
-        zoom -= 0.0001
         population = 0
         army = 0
         resources = 0
@@ -359,6 +362,7 @@ def main(game, screen, name, starting_tile):
                 #we want to earn tile.income money every second
                 frac = 1 / delta_time
                 money += tile.income / frac
+                money -= tile.upkeep / frac
                 money = ceil(money)
                 population += tile.population
                 army += tile.army
@@ -380,30 +384,35 @@ def main(game, screen, name, starting_tile):
             draw_tooltip((selected, select_pos))
 
         draw_crucial_stats(name)
-        draw_notification(random_name_generator('Tribe'), 'Invasion', 'The Orvillians, a prestigous tribe from the northwest lands, have raided. They are a proud peoples, and loyalty is welded into their souls. As for their strength in battle - lets just say - its subpar.')
+        #draw_notification(random_name_generator('Tribe'), 'Natural Disaster', 'The Orvillians, a prestigous tribe from the northwest lands, have raided. They are a proud peoples, and loyalty is welded into their souls. As for their strength in battle - lets just say - its subpar.')
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                #check if we clicked on a tile
-                for tile in tiles:
-                    pos_offset_adjusted = (pygame.mouse.get_pos()[0] - tile_rect.x + 2500, pygame.mouse.get_pos()[1] - tile_rect.y + 2500)
-                    if tile.is_pos_in_tile(pos_offset_adjusted):
-                        selected = tile
-                        select_pos = pygame.mouse.get_pos()
-                        break
+                if event.button == 4:
+                    zoom += 0.1
+                elif event.button == 5:
+                    zoom -= 0.1
                 else:
-                    selected = None
-                    select_pos = None
+                #check if we clicked on a tile
+                    for tile in tiles:
+                        pos_offset_adjusted = (pygame.mouse.get_pos()[0] - tile_rect.x + 2500, pygame.mouse.get_pos()[1] - tile_rect.y + 2500)
+                        if tile.is_pos_in_tile(pos_offset_adjusted):
+                            selected = tile
+                            select_pos = pygame.mouse.get_pos()
+                            break
+                    else:
+                        selected = None
+                        select_pos = None
 
-                if not selected:
-                #allow for click and drag
-                    dragging = True
-                    mouse_x, mouse_y = event.pos
-                    offset_x = tile_rect.x - mouse_x
-                    offset_y = tile_rect.y - mouse_y
+                    if not selected:
+                    #allow for click and drag
+                        dragging = True
+                        mouse_x, mouse_y = event.pos
+                        offset_x = tile_rect.x - mouse_x
+                        offset_y = tile_rect.y - mouse_y
 
             if event.type == pygame.MOUSEMOTION:
                 if dragging:

@@ -6,15 +6,15 @@ import sys
 def main(game, screen):
     def draw_UI(play_hover: bool, settings_hover: bool):
         #draw hexagon
-        draw_regular_polygon(screen, (249, 224, 118), 6, 80, (550, 350), outlines=True, outline_color=((255, 255, 255) if not play_hover else (250,128,114)), outline_width=4)
+        draw_regular_polygon(screen, (0,0,0), 6, 80, (550, 350), outlines=True, outline_color=((255, 255, 255) if not play_hover else (250,128,114)), outline_width=4)
         #play text
         font = pygame.font.SysFont('Monospace', 35)
-        text = font.render('Play', True, (0, 0, 0))
+        text = font.render('Play', True, (255, 255, 255))
         screen.blit(text, (510, 330))
         #draw another hexagon bottom right of the first
-        draw_regular_polygon(screen, (249, 224, 118), 6, 80, (680, 430), outlines=True, outline_color=((255, 255, 255) if not settings_hover else (250,128,114)), outline_width=4)
+        draw_regular_polygon(screen, (0,0,0), 6, 80, (680, 430), outlines=True, outline_color=((255, 255, 255) if not settings_hover else (250,128,114)), outline_width=4)
         #settings text
-        text = font.render('Help', True, (0, 0, 0))
+        text = font.render('Help', True, (255, 255, 255))
         screen.blit(text, (640, 410))
         #draw text
         font = pygame.font.SysFont('Arial', 50)
@@ -36,7 +36,7 @@ def main(game, screen):
     play_hover, settings_hover = False, False
 
     while True:
-        screen.fill((135, 206, 235))
+        screen.fill((0,0,0))
         draw_UI(play_hover, settings_hover)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

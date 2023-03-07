@@ -7,7 +7,7 @@ def random_name_generator(type: str):
     match type:
         case 'Place':
             #random name generator for places, using a list of prefixes and suffixes
-            prefixes = ['New', 'Old', 'Great', 'Little', 'Big', 'Small', 'Upper', 'Lower', 'Middle', 'North', 'South', 'East', 'West', 'Fort', 'Fortress', 'Castle', 'City', 'Town', 'Village', 'Hamlet', 'Farm', 'Fern', 'Oak', 'Maple', 'Birch', 'Pine', 'Willow', 'Elm', 'Cedar', 'Hickory', 'Ash', 'Spruce', 'Beech', 'Holly', 'O']
+            prefixes = ['New', 'Old', 'Great', 'Little', 'Big', 'Small', 'Upper', 'Lower', 'Middle', 'North', 'South', 'East', 'West', 'Fort', 'Fortress', 'Castle', 'City', 'Town', 'Village', 'Hamlet', 'Farm', 'Fern', 'Oak', 'Maple', 'Birch', 'Pine', 'Willow', 'Elm', 'Cedar', 'Hickory', 'Ash', 'Spruce', 'Beech', 'Holly', 'O', 'Spear', 'Merry', 'Berry', 'Griddle']
             suffixes = ['town', 'ville', 'burg', 'ham', 'shire', 'land', 'ford', 'borough', 'burgh', 'port', 'mouth', 'haven', 'wick', 'ton', 'field', 'wood', 'bury', 'chester', 'fix', 'ton']
             optional_second_suffixes = ['Hills', 'Central', 'Lands', 'Downs', 'Valley', 'Shire', 'Township', 'Village', 'Haven', 'Port', 'Deltas']
             optional_second_prefixes = ['Saint', 'The', 'Holy', 'Esteemed']
@@ -59,18 +59,27 @@ def random_name_generator(type: str):
             return name.capitalize()
 
 
-def draw_regular_polygon(surface, color, vertex_count, radius, position, width=0, outlines=False, outline_color=(0, 0, 0), outline_width=1):
-        n, r = vertex_count, radius
-        x, y = position
-        pygame.draw.polygon(surface, color, [
-            (x + r * cos(2 * pi * i / n), y + r * sin(2 * pi * i / n))
-            for i in range(n)
-        ], width)
-        if outlines:
-            pygame.draw.polygon(surface, outline_color, [
-                (x + r * cos(2 * pi * i / n), y + r * sin(2 * pi * i / n))
-                for i in range(n)
-            ], outline_width)
+def draw_tile(surface, radius, position, image, width=0, outlines=False, outline_color=(0, 0, 0), outline_width=1):
+    x, y = position
+    screen_x = (2500 + radius * 3/2 * x)
+    screen_y = (2500 + radius * (3**0.5) * (y + x/2))
+    #render so that width is radius times 2, and height is scaled to match
+    scale_width = radius * 2
+    scale_height = radius * 2 * (image.get_height() / image.get_width())
+    image = pygame.transform.scale(image, (int(scale_width), int(scale_height)))
+    
+    
+
+    surface.blit(image, (screen_x - radius, screen_y - radius * 2))
+    if outlines:
+        #draw 6 lines to make a hexagon
+        pygame.draw.line(surface, outline_color, (screen_x - radius, screen_y), (screen_x - radius/2, screen_y - radius * (3**0.5)/2), outline_width)
+        pygame.draw.line(surface, outline_color, (screen_x - radius/2, screen_y - radius * (3**0.5)/2), (screen_x + radius/2, screen_y - radius * (3**0.5)/2), outline_width)
+        pygame.draw.line(surface, outline_color, (screen_x + radius/2, screen_y - radius * (3**0.5)/2), (screen_x + radius, screen_y), outline_width)
+        pygame.draw.line(surface, outline_color, (screen_x + radius, screen_y), (screen_x + radius/2, screen_y + radius * (3**0.5)/2), outline_width)
+        pygame.draw.line(surface, outline_color, (screen_x + radius/2, screen_y + radius * (3**0.5)/2), (screen_x - radius/2, screen_y + radius * (3**0.5)/2), outline_width)
+        pygame.draw.line(surface, outline_color, (screen_x - radius/2, screen_y + radius * (3**0.5)/2), (screen_x - radius, screen_y), outline_width)
+
 
 def determine_coordinates(grid_position: tuple, radius: int):
     x, y = grid_position
@@ -94,6 +103,7 @@ class Tile:
         self.region = region
         self.army = floor((self.population* random.uniform(0.5, 0.8) * 0.2))
         self.income = floor((self.population * random.uniform(0.5, 0.8) * 0.1))
+        self.image = images[self.type][random.randint(0, len(images[self.type]) - 1)]
 
 
     def unlock(self):
@@ -109,10 +119,12 @@ class Tile:
         self.is_locked = True
         money += self.cost * (random.random())
 
-    def render(self, selected: bool = False):
-        #draw_regular_polygon(window, (255, 255, 255), 6, 50, (600 + self.position[0], 400 + self.position[1]), 50)
-        draw_regular_polygon(tile_surface, (249, 224, 118), 6, 50 * zoom, determine_coordinates(self.position, 50 * zoom), outlines=True, outline_color=((255, 255, 255) if not selected else (255, 0, 0)), outline_width=4)
-
+    def render(self, selected: bool = False, is_buyable: bool = False):
+        if is_buyable:
+            image = images['Buy'][0]
+        else:
+            image = self.image
+        draw_tile(tile_surface, 50 * zoom, self.position, image, outlines=selected, outline_color=(255, 255, 255), outline_width=4)
 
 def draw_tooltip(tooltip, selected_buy_sell: bool = False):
     #create rectangle
@@ -321,6 +333,15 @@ def main(game, screen, name, starting_tile):
     upkeep = 0
     food = 0
 
+    global images
+    images = {
+        'Plains': [pygame.image.load('assets/plains/plains1.png').convert_alpha(), pygame.image.load('assets/plains/plains2.png').convert_alpha(), pygame.image.load('assets/plains/plains0.png').convert_alpha(), pygame.image.load('assets/plains/plains3.png').convert_alpha()],
+        'Forests': [pygame.image.load('assets/forests/forests0.png').convert_alpha(), pygame.image.load('assets/forests/forests1.png').convert_alpha(), pygame.image.load('assets/forests/forests2.png').convert_alpha(), pygame.image.load('assets/forests/forests3.png').convert_alpha()],
+        'Mountains': [pygame.image.load('assets/mountains/mountains0.png').convert_alpha()],
+        'Water': [pygame.image.load('assets/water/water0.png').convert_alpha()],
+        'Buy': [pygame.image.load('assets/BuySquare.png').convert_alpha()],
+    }
+
 
     selected: Tile = None
     select_pos: tuple = (0, 0)
@@ -357,6 +378,10 @@ def main(game, screen, name, starting_tile):
         #move tile_surface based on offset
         tile_surface.fill((0, 0, 0))
 
+        #sort tiles so that lower position[1] tiles are rendered first
+        tiles.sort(key=lambda x: x.position[1])
+
+
         for tile in tiles:
             if not tile.is_locked:
                 #we want to earn tile.income money every second
@@ -384,7 +409,6 @@ def main(game, screen, name, starting_tile):
             draw_tooltip((selected, select_pos))
 
         draw_crucial_stats(name)
-        #draw_notification(random_name_generator('Tribe'), 'Natural Disaster', 'The Orvillians, a prestigous tribe from the northwest lands, have raided. They are a proud peoples, and loyalty is welded into their souls. As for their strength in battle - lets just say - its subpar.')
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

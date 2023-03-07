@@ -104,6 +104,7 @@ class Tile:
         self.army = floor((self.population* random.uniform(0.5, 0.8) * 0.2))
         self.income = floor((self.population * random.uniform(0.5, 0.8) * 0.1))
         self.image = images[self.type][random.randint(0, len(images[self.type]) - 1)]
+        self.purchasable = False
 
 
     def unlock(self):
@@ -325,7 +326,7 @@ def main(game, screen, name, starting_tile):
     global income
     global upkeep
     global food
-    money = 0
+    money = 10000
     population = 0
     army = 0
     resources = 0
@@ -382,6 +383,7 @@ def main(game, screen, name, starting_tile):
         tiles.sort(key=lambda x: x.position[1])
 
 
+
         for tile in tiles:
             if not tile.is_locked:
                 #we want to earn tile.income money every second
@@ -398,13 +400,31 @@ def main(game, screen, name, starting_tile):
 
             if tile == selected:
                 continue
-            tile.render()
+            if tile.is_locked:
+                rendered = False
+                #check if tile is adjacent to a tile we own
+                for other_tile in tiles:
+                    if other_tile.is_locked or other_tile == tile:
+                        continue
+                    q1 = tile.position[0]
+                    r1 = tile.position[1]
+                    q2 = other_tile.position[0]
+                    r2 = other_tile.position[1]
+                    if abs(q1 - q2) <= 1 and abs(r1 - r2) <= 1 and abs(-q1 - r1 + q2 + r2) <= 1:
+                        tile.purchasable = True
+                        if not rendered:
+                            tile.render(is_buyable=True)
+                            rendered = True
+                        break
+
+            elif not tile.is_locked:
+                tile.render()
 
 
         if not selected:
             window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
         else:
-            selected.render(True)
+            selected.render(True, is_buyable=selected.purchasable)
             window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
             draw_tooltip((selected, select_pos))
 
@@ -423,7 +443,7 @@ def main(game, screen, name, starting_tile):
                 #check if we clicked on a tile
                     for tile in tiles:
                         pos_offset_adjusted = (pygame.mouse.get_pos()[0] - tile_rect.x + 2500, pygame.mouse.get_pos()[1] - tile_rect.y + 2500)
-                        if tile.is_pos_in_tile(pos_offset_adjusted):
+                        if tile.is_pos_in_tile(pos_offset_adjusted) and (not tile.is_locked or tile.purchasable):
                             selected = tile
                             select_pos = pygame.mouse.get_pos()
                             break
@@ -446,6 +466,22 @@ def main(game, screen, name, starting_tile):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 dragging = False
+
+            if event.type == pygame.KEYDOWN:
+                #check if pressed enter
+                if event.key == pygame.K_RETURN:
+                    if selected:
+                        if selected.purchasable and money >= selected.cost:
+                            selected.is_locked = False
+                            selected.purchasable = False
+                            money -= selected.cost
+                            money = ceil(money)
+                            selected.render()
+                            selected = None
+                            select_pos = None
+                        else:
+                            selected = None
+                            select_pos = None
 
 
 

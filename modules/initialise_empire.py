@@ -42,7 +42,7 @@ def main(game, screen):
 
     empire_name: str = ""
     empire_location: str = "Plains"
-    locations: list = ['Mountains', 'Forests', 'Plains']
+    locations: list = ['Mountains', 'Forests', 'Plains', 'Deserts']
 
     begin_hover = False
     focused_on_name_input = False

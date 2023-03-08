@@ -1,3 +1,4 @@
+import time
 import pygame
 import sys
 import random
@@ -87,10 +88,31 @@ def determine_coordinates(grid_position: tuple, radius: int):
     screen_y = 2500 + radius * (3**0.5) * (y + x/2)
     return (screen_x, screen_y)
 
+class Notification:
+    def __init__(self, text: str, color: tuple, time: float):
+        self.text = text
+        self.color = color
+        self.time = time
+        self.max_time = time
+
+    def render(self, surface: pygame.Surface, position: tuple):
+        #draw rect that is black with a white border
+        pygame.draw.rect(surface, (0, 0, 0), (position[0] - 5, position[1] - 5, 1000, 75))        
+        pygame.draw.rect(surface, (255, 255, 255), (position[0] - 5, position[1] - 5, 1000, 75), 5)
+        #draw text, make sure it is perfectly centered
+        font = pygame.font.SysFont('Monospace', 25, bold=True)
+        text = font.render(self.text, True, self.color)
+        surface.blit(text, (position[0] + 500 - text.get_width()/2, position[1] + 37.5 - text.get_height()/2))
+        #draw progress bar on bottom of above rect
+        pygame.draw.rect(surface, (255, 255, 255), (position[0], position[1] + 70, 990, 5))
+        pygame.draw.rect(surface, (255, 0, 0), (position[0], position[1] + 70, 990 * (self.time / self.max_time), 5))
+
+    def update(self, dt: float):
+        self.time -= dt
 
 
 class Tile:
-    def __init__(self, name: str, type: str, natural_resources: int, population: int, food_capacity: int, cost: int, position: tuple, region: str, upkeep: int = 0, locked: bool = True):
+    def __init__(self, name: str, type: str, natural_resources: int, population: int, food_capacity: int, cost: int, position: tuple, upkeep: int = 0, locked: bool = True):
         self.type = type
         self.name = name
         self.resources = natural_resources
@@ -100,25 +122,60 @@ class Tile:
         self.is_locked = locked
         self.position = position
         self.upkeep = upkeep
-        self.region = region
         self.army = floor((self.population* random.uniform(0.5, 0.8) * 0.2))
         self.income = floor((self.population * random.uniform(0.5, 0.8) * 0.1))
         self.image = images[self.type][random.randint(0, len(images[self.type]) - 1)]
         self.purchasable = False
-
+        self.adjacent_likelihood = self.adjacency_calc()
+        
 
     def unlock(self):
         self.is_locked = False
+        #get an array of 6 tuples for the 6 possible adjacent tiles
+        adjacent_tiles = [
+            (self.position[0] - 1, self.position[1]),
+            (self.position[0] + 1, self.position[1]),
+            (self.position[0], self.position[1] - 1),
+            (self.position[0], self.position[1] + 1),
+            (self.position[0] - 1, self.position[1] + 1),
+            (self.position[0] + 1, self.position[1] - 1)
+        ]
+        for adjacent in adjacent_tiles:
+            does_exist = False
+            for tile in tiles:
+                if tile.position == adjacent:
+                    does_exist = True
+                    break
+            if not does_exist:
+                #create a new tile
+                name = random_name_generator('Place')
+                #use adjacency calc to determine the type of the new tile
+                new_type = random.choices(list(self.adjacent_likelihood.keys()), list(self.adjacent_likelihood.values()))[0]
+                natural_resources = random.randint(0, 10)
+                population = random.randint(0, 10)
+                food_capacity = random.randint(0, 10)
+                cost = random.randint(0, 10) #fix this later
+                
+                new_tile = Tile(name, new_type, natural_resources, population, food_capacity, cost, adjacent)
+                tiles.append(new_tile)
+
+    def adjacency_calc(self):
+        match self.type:
+            case 'Plains':
+                return {'Plains': 0.3, 'Deserts': 0.2, 'Forests': 0.3, 'Mountains': 0.1, 'Water': 0.1}
+            case 'Deserts':
+                return {'Plains': 0.2, 'Deserts': 0.4, 'Forests': 0.1, 'Mountains': 0.2, 'Water': 0.1}
+            case 'Forests':
+                return {'Plains': 0.3, 'Deserts': 0.1, 'Forests': 0.3, 'Mountains': 0.2, 'Water': 0.1}
+            case 'Mountains':
+                return {'Plains': 0.1, 'Deserts': 0.2, 'Forests': 0.2, 'Mountains': 0.4, 'Water': 0.1}
+            case 'Water':
+                return {'Plains': 0.1, 'Deserts': 0.2, 'Forests': 0.2, 'Mountains': 0.1, 'Water': 0.4}
 
     def is_pos_in_tile(self, pos: tuple):
         x, y = pos
         screen_x, screen_y = determine_coordinates(self.position, 50 * zoom)
         return (x - screen_x)**2 + (y - screen_y)**2 <= 50**2 * zoom**2
-
-    def sell(self):
-        if self.is_locked: return
-        self.is_locked = True
-        money += self.cost * (random.random())
 
     def render(self, selected: bool = False, is_buyable: bool = False):
         if is_buyable:
@@ -127,7 +184,7 @@ class Tile:
             image = self.image
         draw_tile(tile_surface, 50 * zoom, self.position, image, outlines=selected, outline_color=(255, 255, 255), outline_width=4)
 
-def draw_tooltip(tooltip, selected_buy_sell: bool = False):
+def draw_tooltip(tooltip, selected_buy: bool = False):
     #create rectangle
     pygame.draw.rect(window, (0, 0, 0), (tooltip[1][0], tooltip[1][1], 200, 250))
     #draw text
@@ -169,12 +226,12 @@ def draw_tooltip(tooltip, selected_buy_sell: bool = False):
     window.blit(text, (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 3 + 10 + 20))
     #draw another seperator line below cost
     pygame.draw.line(window, (255, 255, 255), (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20), (tooltip[1][0] + 190, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20), 2)
-    #at the bottom right, sell/buy button
+    #at the bottom right, buy button
     pygame.draw.rect(window, (0, 0, 0), (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10, 180, 50))
     #outline
-    pygame.draw.rect(window, ((255, 255, 255) if not selected_buy_sell else (250,128,114)), (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10, 180, 50), 2)
+    pygame.draw.rect(window, ((255, 255, 255) if not selected_buy else (250,128,114)), (tooltip[1][0] + 10, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10, 180, 50), 2)
     font = pygame.font.SysFont('Monospace', 20, bold=True)
-    text = font.render(('[ENTER] Buy' if tooltip[0].is_locked else '[ENTER] Sell'), True, (255, 255, 255))
+    text = font.render(('[ENTER] Buy' if tooltip[0].is_locked else '[ENTER] Close'), True, (255, 255, 255))
     window.blit(text, (tooltip[1][0] + 100 - text.get_width() / 2, tooltip[1][1] + 10 + 20 * 2 + 10 + 20 * 4.5 + 10 + 20 + 10 + 25 - text.get_height() / 2))
     # and now an outline for the whole thing
     pygame.draw.rect(window, (255, 255, 255), (tooltip[1][0], tooltip[1][1], 200, 10 + 20 * 2 + 10 + 20 * 5 + 10 + 20 + 10 + 50), 2)
@@ -339,6 +396,7 @@ def main(game, screen, name, starting_tile):
         'Plains': [pygame.image.load('assets/plains/plains1.png').convert_alpha(), pygame.image.load('assets/plains/plains2.png').convert_alpha(), pygame.image.load('assets/plains/plains0.png').convert_alpha(), pygame.image.load('assets/plains/plains3.png').convert_alpha()],
         'Forests': [pygame.image.load('assets/forests/forests0.png').convert_alpha(), pygame.image.load('assets/forests/forests1.png').convert_alpha(), pygame.image.load('assets/forests/forests2.png').convert_alpha(), pygame.image.load('assets/forests/forests3.png').convert_alpha()],
         'Mountains': [pygame.image.load('assets/mountains/mountains0.png').convert_alpha()],
+        'Deserts': [pygame.image.load('assets/deserts/deserts0.png').convert_alpha(), pygame.image.load('assets/deserts/deserts1.png').convert_alpha(), pygame.image.load('assets/deserts/deserts2.png').convert_alpha(), pygame.image.load('assets/deserts/deserts3.png').convert_alpha(), pygame.image.load('assets/deserts/deserts4.png').convert_alpha()],
         'Water': [pygame.image.load('assets/water/water0.png').convert_alpha()],
         'Buy': [pygame.image.load('assets/BuySquare.png').convert_alpha()],
     }
@@ -347,23 +405,24 @@ def main(game, screen, name, starting_tile):
     selected: Tile = None
     select_pos: tuple = (0, 0)
     dragging: bool = False
-
-    tiles: list = [
+    global tiles
+    tiles = [
         #the inner four. cheap and easy to get.
-        Tile(random_name_generator('Place'), 'Plains', 100, 450, 450, 1000, (0, 0), 'Inner Valleys', locked=(starting_tile != 'Plains')),
-        Tile(random_name_generator('Place'), 'Forests', 300, 350, 350, 1500, (1, 0), 'Inner Valleys', locked=(starting_tile != 'Forests')),
-        Tile(random_name_generator('Place'), 'Mountains', 800, 150, 50, 1750, (1, 1), 'Southern Slopes', locked=(starting_tile != 'Mountains')),
-        Tile(random_name_generator('Place'), 'Plains', 75, 425, 500, 1200, (0, 1), 'Inner Valleys'),
+        Tile(random_name_generator('Place'), 'Plains', 100, 450, 450, 1000, (0, 0), locked=(starting_tile != 'Plains')),
+        Tile(random_name_generator('Place'), 'Forests', 300, 350, 350, 1500, (1, 0), locked=(starting_tile != 'Forests')),
+        Tile(random_name_generator('Place'), 'Mountains', 800, 150, 50, 1750, (0, -1), locked=(starting_tile != 'Mountains')),
+        Tile(random_name_generator('Place'), 'Deserts', 75, 425, 500, 1200, (0, 1), locked=(starting_tile != 'Deserts')),
         #moving into the outer mid ranges - these tiles require some progression and upkeep
-        Tile(random_name_generator('Place'), 'Mountains', 900, 75, 25, 4500, (2, 1), 'Southern Slopes', upkeep=20),
-        Tile(random_name_generator('Place'), 'Forests', 300, 350, 250, 2600, (1, -1), 'Northern Forests', upkeep=22),
-        Tile(random_name_generator('Place'), 'Plains', 50, 600, 350, 3200, (-1, 1), 'The Bushy Region', upkeep=16),
-        Tile(random_name_generator('Place'), 'Mountains', 700, 200, 100, 5500, (2, 0), 'Southern Slopes', upkeep=19),
-        Tile(random_name_generator('Place'), 'Forests', 330, 330, 340, 3200, (1, -2), 'The Bushy Region', upkeep=21),
-        Tile(random_name_generator('Place'), 'Plains', 50, 450, 500, 1000, (0, -1), 'Inner Valleys', upkeep=15),
-        Tile(random_name_generator('Place'), 'Forests', 300, 400, 300, 1500, (-1, 0), 'Northern Forests', upkeep=18),
+        Tile(random_name_generator('Place'), 'Forests', 300, 350, 250, 2600, (1, -1), upkeep=22),
+        Tile(random_name_generator('Place'), 'Plains', 50, 600, 350, 3200, (-1, 1), upkeep=16),
+        Tile(random_name_generator('Place'), 'Forests', 300, 400, 300, 1500, (-1, 0), upkeep=18),
     ]
     clock = pygame.time.Clock()
+
+    notifications = [
+        Notification( str(random.randint(100, 900)) + 'AD: ' + name + ' has been founded!', (255, 255, 255), 5),
+    ]
+
     while True:
         if zoom < 0.1:
             zoom = 0.1
@@ -381,8 +440,6 @@ def main(game, screen, name, starting_tile):
 
         #sort tiles so that lower position[1] tiles are rendered first
         tiles.sort(key=lambda x: x.position[1])
-
-
 
         for tile in tiles:
             if not tile.is_locked:
@@ -428,6 +485,20 @@ def main(game, screen, name, starting_tile):
             window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
             draw_tooltip((selected, select_pos))
 
+        i = 0
+        for notification in notifications:
+            print(notification.text)
+            notification.render(
+                window,
+                #top of the screen
+                (window.get_width() / 2 - 500, 50 + i * 100),
+            )
+            notification.update(delta_time)
+            if notification.time < 0:
+                notifications.remove(notification)
+                del notification
+            i += 1
+
         draw_crucial_stats(name)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -472,16 +543,23 @@ def main(game, screen, name, starting_tile):
                 if event.key == pygame.K_RETURN:
                     if selected:
                         if selected.purchasable and money >= selected.cost:
-                            selected.is_locked = False
+                            selected.unlock()
                             selected.purchasable = False
                             money -= selected.cost
                             money = ceil(money)
                             selected.render()
                             selected = None
                             select_pos = None
-                        else:
+                        elif selected.purchasable and money < selected.cost:
+                            notifications.append(Notification('You do not have enough money to purchase this tile!', (255, 0, 0), 5))
                             selected = None
                             select_pos = None
+                        elif not selected.is_locked:
+                            selected = None
+                            select_pos = None
+
+
+                        
 
 
 

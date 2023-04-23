@@ -8,7 +8,7 @@ def random_name_generator(type: str):
     match type:
         case 'Place':
             #random name generator for places, using a list of prefixes and suffixes
-            prefixes = ['New', 'Old', 'Great', 'Little', 'Big', 'Small', 'Upper', 'Lower', 'Middle', 'North', 'South', 'East', 'West', 'Fort', 'Fortress', 'Castle', 'City', 'Town', 'Village', 'Hamlet', 'Farm', 'Fern', 'Oak', 'Maple', 'Birch', 'Pine', 'Willow', 'Elm', 'Cedar', 'Hickory', 'Ash', 'Spruce', 'Beech', 'Holly', 'O', 'Spear', 'Merry', 'Berry', 'Griddle']
+            prefixes = ['New', 'Old', 'Great', 'Little', 'Big', 'Small', 'Upper', 'Lower', 'Middle', 'North', 'South', 'East', 'West', 'Fort', 'Fortress', 'Castle', 'City', 'Town', 'Village', 'Hamlet', 'Farm', 'Fern', 'Oak', 'Maple', 'Birch', 'Pine', 'Willow', 'Elm', 'Cedar', 'Hickory', 'Ash', 'Spruce', 'Beech', 'Holly', 'O', 'Spear', 'Merry', 'Berry', 'Griddle', 'Fardle', 'Bongle', 'Modern', 'Silly']
             suffixes = ['town', 'ville', 'burg', 'ham', 'shire', 'land', 'ford', 'borough', 'burgh', 'port', 'mouth', 'haven', 'wick', 'ton', 'field', 'wood', 'bury', 'chester', 'fix', 'ton']
             optional_second_suffixes = ['Hills', 'Central', 'Lands', 'Downs', 'Valley', 'Shire', 'Township', 'Village', 'Haven', 'Port', 'Deltas']
             optional_second_prefixes = ['Saint', 'The', 'Holy', 'Esteemed']
@@ -122,8 +122,8 @@ class Tile:
         self.is_locked = locked
         self.position = position
         self.upkeep = upkeep
-        self.army = floor((self.population* random.uniform(0.5, 0.8) * 0.2))
-        self.income = floor((self.population * random.uniform(0.5, 0.8) * 0.1))
+        self.army = floor((self.population* random.uniform(0.5, 0.8)))
+        self.income = floor((self.resources * random.uniform(0.5, 0.8) * 0.1))
         self.image = images[self.type][random.randint(0, len(images[self.type]) - 1)]
         self.purchasable = False
         self.adjacent_likelihood = self.adjacency_calc()
@@ -151,12 +151,34 @@ class Tile:
                 name = random_name_generator('Place')
                 #use adjacency calc to determine the type of the new tile
                 new_type = random.choices(list(self.adjacent_likelihood.keys()), list(self.adjacent_likelihood.values()))[0]
-                natural_resources = random.randint(0, 10)
-                population = random.randint(0, 10)
-                food_capacity = random.randint(0, 10)
-                cost = random.randint(0, 10) #fix this later
+                match new_type:
+                    case 'Plains':
+                        population = random.randint(0, 400)
+                        food_capacity = 1000 - population - random.randint(0, 100)
+                        natural_resources = 1000 - population - food_capacity
+                    case 'Deserts':
+                        natural_resources = 900
+                        population = random.randint(0, 100)
+                        food_capacity = 1000 - population - natural_resources
+                    case 'Forests':
+                        natural_resources = random.randint(0, 300)
+                        population = 1000 - natural_resources - random.randint(0, 300)
+                        food_capacity = 1000 - population - natural_resources
+                    case 'Mountains':
+                        natural_resources = random.randint(0, 700)
+                        population = random.randint(0, 300)
+                        food_capacity = 1000 - population - natural_resources
+                    case 'Water':
+                        natural_resources = random.randint(0, 1000)
+                        population = 0
+                        food_capacity = 0
+
+                cost = floor(1000 + (abs(self.position[0]) + abs(self.position[1])) * 1000)
+
+                #higher upkeep the further out you go, or the more resources the tile has
+                upkeep = floor((abs(self.position[0]) + abs(self.position[1])) * 15 + natural_resources * 0.01)
                 
-                new_tile = Tile(name, new_type, natural_resources, population, food_capacity, cost, adjacent)
+                new_tile = Tile(name, new_type, natural_resources, population, food_capacity, cost, adjacent, upkeep)
                 tiles.append(new_tile)
 
     def adjacency_calc(self):
@@ -170,7 +192,7 @@ class Tile:
             case 'Mountains':
                 return {'Plains': 0.1, 'Deserts': 0.2, 'Forests': 0.2, 'Mountains': 0.4, 'Water': 0.1}
             case 'Water':
-                return {'Plains': 0.1, 'Deserts': 0.2, 'Forests': 0.2, 'Mountains': 0.1, 'Water': 0.4}
+                return {'Plains': 0.2, 'Deserts': 0.2, 'Forests': 0.2, 'Mountains': 0, 'Water': 0.4}
 
     def is_pos_in_tile(self, pos: tuple):
         x, y = pos
@@ -237,7 +259,7 @@ def draw_tooltip(tooltip, selected_buy: bool = False):
     pygame.draw.rect(window, (255, 255, 255), (tooltip[1][0], tooltip[1][1], 200, 10 + 20 * 2 + 10 + 20 * 5 + 10 + 20 + 10 + 50), 2)
 
 
-def draw_crucial_stats(name: str):
+def draw_crucial_stats(name: str, money: int):
     #rect at very bottom
     pygame.draw.rect(window, (0, 0, 0), (0, 750, 1200, 50))
     #outline
@@ -254,7 +276,7 @@ def draw_crucial_stats(name: str):
     #draw money on right
     text = font_emoji.render('💵', True, (255, 255, 255))
     window.blit(text, (1200 - 10 - 150 - 100, 750 + 25 - text.get_height() / 2))
-    text = font.render('$' + str(money), True, (255, 255, 255))
+    text = font.render('$' + str(floor(money)), True, (255, 255, 255))
     window.blit(text, (1200 - 130 - 100, 750 + 25 - text.get_height() / 2))
 
     # on the right of money, draw income with a + and expenses with a -
@@ -289,8 +311,26 @@ def draw_crucial_stats(name: str):
     text = font.render(str(food), True, (255, 255, 255))
     window.blit(text, (1200 - 130 - 10 - 150 - 10 - 150 + 50 - 10 - 150 - 10 - 150 - 100, 750 + 25 - text.get_height() / 2))
 
+def get_rand_description(type: str, title: str):
+    match type:
+        case 'Invasion':
+            choices = [
+                'The ' + title + ' have invaded your lands! They seek to take ' + random.choice(['your resources and your people', 'everything you have', 'your livelihood', 'your people']) +', and stopping them is essential to your survival. The ' + title + ' are a ' + random.choice(['cunning', 'powerful', 'loyal', 'extreme', 'brutal', 'aggressive']) + ' force.',
+                'Well done player, for you have grown mighty enough to see your empire threatened. The ' + title + ' seek to invade your lands, and take '  + random.choice(['your resources and your people', 'everything you have', 'your livelihood', 'your people']) + '. To deter them is to ensure your survival.',
+                'From lands foreign to ours, the ' + title + ' seek to invade us. To wreak havoc, to take ' + random.choice(['our resources and our people', 'everything we have', 'our livelihood', 'our people']) + '. As the leader of these lands, you must stop them. They are a ' + random.choice(['cunning', 'powerful', 'loyal', 'extreme', 'brutal', 'aggressive']) + ' force.',
+            ]
+            return random.choice(choices)
+        case 'Natural Disaster':
+            choices = [
+                'A long spell of drought has struck your lands, and your people are suffering. You must find a way to provide for them, or they will perish.',
+                'Floods have wreaked havoc on the ' + random.choice(['northwest territories', 'southern lands', 'eastern plains']) + ', and they continue to expand. You must stop this and ensure that the food supply remains secure, and the people do not get washed away to oblivion.',
+                'A rather large hurricane is headed your way. Set to strike ' + random.choice(tiles).name + ', it will cause a lot of damage. You must ensure that your people are safe, and that the damage is kept to a minimum.',
+                'The tribe of ' + random_name_generator('Tribe') + ' has been struck by a terrible plague. A key trading partner, we have been forced to cease all trade with them, but the disease stays rampant. Only money can stop it now.',
+                'A terrible earthquake has struck the ' + random.choice(['northwest territories', 'southern lands', 'eastern plains']) + ', and it has caused a lot of damage. You must ensure that your people are safe, and that the damage is kept to a minimum.',
+            ]
+            return random.choice(choices)
 
-def draw_notification(title: str, type: str, desc: str):
+def draw_notification(title: str, type: str, desc: str, image: str):
     #draw a rect in middle of screen
     pygame.draw.rect(window, (0, 0, 0), (600 - 300, 400 - 150, 600, 300))
     pygame.draw.rect(window, (255, 255, 255), (600 - 300, 400 - 150, 600, 300), 2)
@@ -336,13 +376,11 @@ def draw_notification(title: str, type: str, desc: str):
             font = pygame.font.SysFont('Monospace', 25, bold=True)
             text = font.render('The ' + title + ' are attacking!', True, (255, 255, 255))
             window.blit(text, (600 - text.get_width() / 2, 400 - 150 + 10))
-            options = ['[B] Bribe', '[F] Fight', '[C] Cede-Land']
+            options = ['[B] Bribe', '[F] Fight']
             pygame.draw.line(window, (255, 255, 255), (600 - 300 + 10, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), (600, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 10), 2)
-            rand = random.randint(1, 10)
-            path = 'assets/tribes/' + str(rand) + '.png'
-            image = pygame.image.load(path)
-            image = pygame.transform.scale(image, (150, 100))
-            window.blit(image, (600 - 300 + 400, 400 - 150 + 10 + 25 + 20 * len(desc) + 10 + 30 + 10))
+            image_render = pygame.image.load(image)
+            image_render = pygame.transform.scale(image_render, (150, 100))
+            window.blit(image_render, (600 - 300 + 400, 400 - 150 + 10 + 25 + 20 * len(desc) + 10 + 30 + 10))
             #draw tribe name above image
             font = pygame.font.SysFont('Monospace', 20, bold=True)
             text = font.render(title, True, (255, 255, 255))
@@ -359,17 +397,14 @@ def draw_notification(title: str, type: str, desc: str):
         text = font.render(value, True, (255, 255, 255))
         window.blit(text, (600 - 300 + 15 + 40, 400 - 150 + 10 + 25 + 10 + 10 + 20 * len(desc) + 30 + 30 * i))
 
-    
-
-
-
 
 def main(game, screen, name, starting_tile):
+    #here we define all necessary global variables.
     global window
-    window = screen
+    window = screen #window is a constant
 
     global tile_surface
-    tile_surface = pygame.Surface((5000, 5000))
+    tile_surface = pygame.Surface((5000, 5000)) #this is also a constant; a surface to render the tiles onto
 
     tile_rect = pygame.rect.Rect(0, 0, 5000, 5000)
     
@@ -383,7 +418,8 @@ def main(game, screen, name, starting_tile):
     global income
     global upkeep
     global food
-    money = 10000
+
+    money = 3000
     population = 0
     army = 0
     resources = 0
@@ -405,12 +441,16 @@ def main(game, screen, name, starting_tile):
     selected: Tile = None
     select_pos: tuple = (0, 0)
     dragging: bool = False
+    current_invasion_or_disaster: tuple = None
+    starvation_timer = 30 * 60
+    bankrupcy_timer = 30 * 60
+
     global tiles
     tiles = [
         #the inner four. cheap and easy to get.
         Tile(random_name_generator('Place'), 'Plains', 100, 450, 450, 1000, (0, 0), locked=(starting_tile != 'Plains')),
         Tile(random_name_generator('Place'), 'Forests', 300, 350, 350, 1500, (1, 0), locked=(starting_tile != 'Forests')),
-        Tile(random_name_generator('Place'), 'Mountains', 800, 150, 50, 1750, (0, -1), locked=(starting_tile != 'Mountains')),
+        Tile(random_name_generator('Place'), 'Mountains', 600, 200, 200, 1750, (0, -1), locked=(starting_tile != 'Mountains')),
         Tile(random_name_generator('Place'), 'Deserts', 75, 425, 500, 1200, (0, 1), locked=(starting_tile != 'Deserts')),
         #moving into the outer mid ranges - these tiles require some progression and upkeep
         Tile(random_name_generator('Place'), 'Forests', 300, 350, 250, 2600, (1, -1), upkeep=22),
@@ -420,14 +460,15 @@ def main(game, screen, name, starting_tile):
     clock = pygame.time.Clock()
 
     notifications = [
-        Notification( str(random.randint(100, 900)) + 'AD: ' + name + ' has been founded!', (255, 255, 255), 5),
+        Notification(str(random.randint(100, 900)) + 'AD: ' + name + ' has been founded!', (255, 255, 255), 5),
+        Notification('Hi Mr Chillapa; this is a quality game!', (255, 255, 255), 10),
     ]
 
     while True:
+        screen.fill((0, 0, 0))
         if zoom < 0.1:
             zoom = 0.1
         delta_time = clock.tick(60) / 1000
-        screen.fill((0, 0, 0))
         population = 0
         army = 0
         resources = 0
@@ -443,11 +484,6 @@ def main(game, screen, name, starting_tile):
 
         for tile in tiles:
             if not tile.is_locked:
-                #we want to earn tile.income money every second
-                frac = 1 / delta_time
-                money += tile.income / frac
-                money -= tile.upkeep / frac
-                money = ceil(money)
                 population += tile.population
                 army += tile.army
                 resources += tile.resources
@@ -477,6 +513,42 @@ def main(game, screen, name, starting_tile):
             elif not tile.is_locked:
                 tile.render()
 
+        frac = 1 / delta_time
+        diff = (income - upkeep) / frac
+        money += diff
+
+        if food < population * 0.8: 
+            if not any(['starving' in notification.text for notification in notifications]):
+                notifications.append(Notification('Your people are starving: ' + str(floor(starvation_timer/60)) + ' seconds left.', (255, 0, 0), 10))
+            else:
+                #remove old notification
+                for notification in notifications:
+                    if 'starving' in notification.text:
+                        notifications.remove(notification)
+                        break
+                notifications.append(Notification('Your people are starving: ' + str(floor(starvation_timer/60)) + ' seconds left.', (255, 0, 0), 10))
+            starvation_timer -= delta_time * 60
+            if starvation_timer <= 0:
+                return 'game_over', 'Starvation'
+        else:
+            starvation_timer += delta_time * 60 if starvation_timer < 30 * 60 else 0
+            
+        if money < 0:
+            #check if notification with title includes 'Bankruptcy'
+            if not any(['Bankrupt' in notification.text for notification in notifications]):
+                notifications.append(Notification('You are going Bankrupt: ' + str(floor(bankrupcy_timer/60)) + ' seconds left.', (255, 0, 0), 10))
+            else:
+                #remove old notification
+                for notification in notifications:
+                    if 'Bankrupt' in notification.text:
+                        notifications.remove(notification)
+                        break
+                notifications.append(Notification('You are going Bankrupt: ' + str(floor(bankrupcy_timer/60)) + ' seconds left.', (255, 0, 0), 10))
+            bankrupcy_timer -= delta_time * 60
+            if bankrupcy_timer <= 0:
+                return 'game_over', 'Bankruptcy'
+        else:
+            bankrupcy_timer += delta_time * 60 if bankrupcy_timer < 30 * 60 else 0
 
         if not selected:
             window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
@@ -484,10 +556,23 @@ def main(game, screen, name, starting_tile):
             selected.render(True, is_buyable=selected.purchasable)
             window.blit(tile_surface, (tile_rect[0] - 2500, tile_rect[1] - 2500))
             draw_tooltip((selected, select_pos))
+            
+        if current_invasion_or_disaster == None and random.randint(0, 60 * 90) == 0:
+            rand = random.randint(1, 10)
+            path = 'assets/tribes/' + str(rand) + '.png'
+            tribe_name = random_name_generator('Tribe')
+            type_of_event = random.choice(['Invasion', 'Natural Disaster'])
+            if type_of_event == 'Invasion':
+                current_invasion_or_disaster = ('Invasion', path, tribe_name, get_rand_description('Invasion', tribe_name))
+            elif type_of_event == 'Natural Disaster':
+                current_invasion_or_disaster = ('Natural Disaster', path, random.choice(['A tragedy hath occured!', 'Forces of nature interfere!', 'Natural Disaster wreaks havoc!', 'Nature becomes the enemy!']), get_rand_description('Natural Disaster', tribe_name))
+
+
+        if current_invasion_or_disaster != None:
+            draw_notification(current_invasion_or_disaster[2], current_invasion_or_disaster[0], current_invasion_or_disaster[3], current_invasion_or_disaster[1])
 
         i = 0
         for notification in notifications:
-            print(notification.text)
             notification.render(
                 window,
                 #top of the screen
@@ -499,7 +584,7 @@ def main(game, screen, name, starting_tile):
                 del notification
             i += 1
 
-        draw_crucial_stats(name)
+        draw_crucial_stats(name, money)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -546,7 +631,6 @@ def main(game, screen, name, starting_tile):
                             selected.unlock()
                             selected.purchasable = False
                             money -= selected.cost
-                            money = ceil(money)
                             selected.render()
                             selected = None
                             select_pos = None
@@ -557,11 +641,33 @@ def main(game, screen, name, starting_tile):
                         elif not selected.is_locked:
                             selected = None
                             select_pos = None
+                
+                if current_invasion_or_disaster != None:
+                    #bfcp
+                    if current_invasion_or_disaster[0] == 'Invasion':
+                        #if b
+                        if event.key == pygame.K_b:
+                            #deduct upkeep
+                            bribe = upkeep * random.random()
+                            notifications.append(Notification('You have paid ' + str(bribe) + ' to the invaders!', (255, 255, 255), 5))
+                            money -= bribe
+                            current_invasion_or_disaster = None
+                        #if f
+                        if event.key == pygame.K_f:
+                            #if army is between 70% and 100% of the population, walk away
+                            if population * 0.7 <= army:
+                                notifications.append(Notification('You have successfully defended your empire!', (255, 255, 255), 5))
+                                current_invasion_or_disaster = None
+                            else:
+                                notifications.append(Notification('You do not have enough army units to defend your empire!', (255, 0, 0), 5))
+                                return "game_over", "Invasion (not enough army units)"
 
-
-                        
-
-
+                    elif current_invasion_or_disaster[0] == 'Natural Disaster' and event.key == pygame.K_p:
+                        #deduct upkeep
+                        loss = upkeep * random.random()
+                        notifications.append(Notification('You have paid ' + str(loss) + ' due to the natural disaster!', (255, 255, 255), 5))
+                        money -= loss
+                        current_invasion_or_disaster = None
 
 
         pygame.display.update()

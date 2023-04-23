@@ -3,6 +3,7 @@ import sys
 import modules.game
 import modules.menu
 import modules.initialise_empire
+import modules.game_over
 
 #create a pygame window
 
@@ -23,7 +24,7 @@ def main(gamestate: str):
             x += delta_time * 6000
             #slide in a rect from the left
             screen.fill((0, 0, 0))
-            # slide in rect from left ease in out
+            # slide in rect from left ease in out   
             pygame.draw.rect(screen, (249, 224, 118), (x, 0, 1200, 267))
             pygame.draw.rect(screen, (209, 224, 118), (x*1.05, 267, 1200, 267))
             pygame.draw.rect(screen, (189, 224, 118), (x*1.1, 534, 1200, 267))
@@ -38,7 +39,7 @@ def main(gamestate: str):
             pygame.display.update()
 
 
-    def check_gamestate(gamestate: str, empire_name: str, empire_location: str):
+    def check_gamestate(gamestate: str, empire_name: str, empire_location: str, reason_over: str = None):
         pygame.mouse.set_cursor(*pygame.cursors.arrow)
         match gamestate:
             case 'menu':
@@ -47,15 +48,20 @@ def main(gamestate: str):
                 check_gamestate(gamestate, empire_name, empire_location)
             case 'game':
                 slideInOut()
-                gamestate = modules.game.main(game, screen, empire_name, empire_location)
-                check_gamestate(gamestate, empire_name, empire_location)
+                gamestate, reason_over = modules.game.main(game, screen, empire_name, empire_location)
+                check_gamestate(gamestate, empire_name, empire_location, reason_over)
 
             case 'initialise_empire':
                 slideInOut()
                 gamestate, empire_name, empire_location = modules.initialise_empire.main(game, screen)
                 check_gamestate(gamestate, empire_name, empire_location)
+            case 'game_over':
+                slideInOut()
+                gamestate = modules.game_over.main(game, screen, reason_over)
+                check_gamestate(gamestate, empire_name, empire_location)
 
-    check_gamestate(gamestate, empire_name, empire_location)
+
+    check_gamestate(gamestate, empire_name, empire_location, "")
 
 
 

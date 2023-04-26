@@ -40,58 +40,60 @@ def main(game, screen):
         text = font.render(current_option, True, (0, 0, 0))
         screen.blit(text, (x + 10, y + 10))
 
-    empire_name: str = ""
-    empire_location: str = "Plains"
-    locations: list = ['Mountains', 'Forests', 'Plains', 'Deserts']
+    empire_name: str = "" #default name
+    empire_location: str = "Plains" #default location
+    locations: list = ['Mountains', 'Forests', 'Plains', 'Deserts'] #list of locations
 
+    #init booleans
     begin_hover = False
     focused_on_name_input = False
     focused_on_dropdown = False
 
     while True:
-        screen.fill((135, 206, 235))
-        draw_UI(empire_name, empire_location)
-        for event in pygame.event.get():
+        screen.fill((135, 206, 235)) #fill screen with sky blue
+        draw_UI(empire_name, empire_location) #draw UI
+        for event in pygame.event.get(): #event loop
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN and focused_on_name_input:
-                if event.key == pygame.K_BACKSPACE and len(empire_name) > 0:
-                    empire_name = empire_name[:-1]
-                elif len(empire_name) < 26:
-                    empire_name += event.unicode
+            if event.type == pygame.KEYDOWN and focused_on_name_input: #if typing in name input
+                if event.key == pygame.K_BACKSPACE and len(empire_name) > 0: #if backspace and name is not empty
+                    empire_name = empire_name[:-1] #remove last character
+                elif len(empire_name) < 26: #if name is less than 26 characters
+                    empire_name += event.unicode #add character to name
 
-            if event.type == pygame.MOUSEMOTION:
+            if event.type == pygame.MOUSEMOTION: #check if hovering over dropdown
                 #check if hovering over begin button
-                if 650 < event.pos[0] < 850 and 550 < event.pos[1] < 600:
-                    begin_hover = True
+                if 650 < event.pos[0] < 850 and 550 < event.pos[1] < 600:  # if mouse is over begin button
+                    begin_hover = True #set bool
                 else:
                     begin_hover = False
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN: #check if clicked on dropdown
 
                 #check if clicked on name input rect
-                if 350 < event.pos[0] < 850 and 250 < event.pos[1] < 300:
+                if 350 < event.pos[0] < 850 and 250 < event.pos[1] < 300:  # if mouse is over name input
                     focused_on_name_input = True
                 else:
                     focused_on_name_input = False
 
-                if 825 < event.pos[0] < 855 and 310 < event.pos[1] < 355:
-                    focused_on_dropdown = True
-                    empire_location = locations[locations.index(empire_location) - 1 if locations.index(empire_location) - 1 > -1 else -1]
-                elif 825 < event.pos[0] < 855 and 360 < event.pos[1] < 400:
-                    focused_on_dropdown = True
-                    empire_location = locations[locations.index(empire_location) + 1 if locations.index(empire_location) + 1 < len(locations) else 0]
-                elif 650 < event.pos[0] < 850 and 337 < event.pos[1] < 387:
+                if 825 < event.pos[0] < 855 and 310 < event.pos[1] < 355: # up arrow
+                    focused_on_dropdown = True #we set the bool
+                    empire_location = locations[locations.index(empire_location) - 1 if locations.index(empire_location) - 1 > -1 else -1] # if index is -1, return last item in list
+                elif 825 < event.pos[0] < 855 and 360 < event.pos[1] < 400: # down arrow
+                    focused_on_dropdown = True 
+                    # if index is len(locations), return first item in list (below)
+                    empire_location = locations[locations.index(empire_location) + 1 if locations.index(empire_location) + 1 < len(locations) else 0] 
+                elif 650 < event.pos[0] < 850 and 337 < event.pos[1] < 387: # dropdown
                     focused_on_dropdown =True
-                else:
+                else: #none of these, not focused
                     focused_on_dropdown = False
 
-                if begin_hover and len(empire_name) > 0:
-                    return 'game', empire_name, empire_location
-                if len(empire_name) < 1 and begin_hover:
-                    focused_on_name_input = True
+                if begin_hover and len(empire_name) > 0: #if begin button is hovered over and empire name is not empty
+                    return 'game', empire_name, empire_location #return game screen
+                if len(empire_name) < 1 and begin_hover: #if begin button is hovered over and empire name is empty
+                    focused_on_name_input = True #focus on name input
                 
         pygame.display.update()
         

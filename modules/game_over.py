@@ -30,10 +30,10 @@ def main(game, screen, reason_over):
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    mouse_pos = event.pos
-                    if mouse_pos[0] >= 550 and mouse_pos[0] <= 650:
-                        if mouse_pos[1] >= 400 and mouse_pos[1] <= 450:
-                            return 'menu'
+                if event.button == 1: #left click
+                    mouse_pos = event.pos #get mouse position
+                    if mouse_pos[0] >= 550 and mouse_pos[0] <= 650: #check if mouse is over button
+                        if mouse_pos[1] >= 400 and mouse_pos[1] <= 450: #check if mouse is over button
+                            return 'menu' #return to menu.py
                         
         pygame.display.update()
